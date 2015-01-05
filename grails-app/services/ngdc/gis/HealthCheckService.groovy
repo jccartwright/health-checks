@@ -2,6 +2,8 @@ package ngdc.gis
 
 import grails.transaction.Transactional
 import java.security.MessageDigest
+import groovy.json.JsonSlurper
+
 
 @Transactional
 class HealthCheckService {
@@ -56,5 +58,50 @@ class HealthCheckService {
         MessageDigest digest = MessageDigest.getInstance("MD5")
         digest.update(bytes);
         new BigInteger(1, digest.digest()).toString(16).padLeft(32, '0')
+    }
+
+
+    def jsonSlurper = new JsonSlurper()
+    def load(host) {
+        def mapservices = readArcgisServiceDirectory("http://${host}/arcgis/rest/services")
+
+        def msg = ""
+        mapservices.each {
+            //if (! Mapservice.findByName(it)) {
+                msg += "adding Mapservice ${it}...\n"
+              //  new Mapservice(name:it).save()
+            //} else {
+            //    log.debug "skipping ${it}..."
+            //}
+        }
+        if (msg) {
+            return msg
+        } else {
+            return "no new mapservices to add"
+        }
+    }
+
+    def readArcgisServiceDirectory(baseUrl) {
+        def url = new URL("${baseUrl}?f=json")
+        def conn = url.openConnection()
+
+        if (conn.responseCode != 200) {
+            log.warn "ERROR on ${baseUrl}. ${conn.responseCode}: ${conn.responseMessage}"
+            return
+        }
+
+        def result = jsonSlurper.parseText( conn.content.text )
+
+        def mapservices = result.services.findAll {
+            it.type == 'MapServer'  //ignore GeocodeServer, ImageServer
+        }.name
+
+        result.folders.each {
+            def content = readArcgisServiceDirectory("${baseUrl}/${it}")
+            if (content) {
+                mapservices += content
+            }
+        }
+        return mapservices
     }
 }

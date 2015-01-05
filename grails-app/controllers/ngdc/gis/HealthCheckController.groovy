@@ -17,7 +17,9 @@ class HealthCheckController {
         println mapsChecks
         def count = HealthCheck.countByTag("arcgis")
         */
-        println HealthCheck.findByCheckInterval('5minutes')
+        //println HealthCheck.findByCheckInterval('5minutes')
+        def response = healthCheckService.load('maps.ngdc.noaa.gov')
+        println response
         render "success"
 
     }
