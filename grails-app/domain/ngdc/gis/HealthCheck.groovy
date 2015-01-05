@@ -12,6 +12,7 @@ class HealthCheck implements Taggable {
     Double lastResponseTime
     String responseChecksum
     //TODO store last response in BLOB?
+    byte[] lastResponse
     Integer checkCount = 0
     //null indicates check only run on demand
     String checkInterval
@@ -28,11 +29,14 @@ class HealthCheck implements Taggable {
         checkCount nullable: false
         checkInterval nullable: true, inList: ['5minutes', '15minutes','hourly','daily','weekly']
         lastSuccess nullable: true
+        lastResponse nullable: true, maxSize: 5000000
         //queryParams nullable: true
     }
 
     def constructUrl() {
-        println "${this.url}${pathinfo ?: ''}${queryString ? '?'+queryString : ''}"
+        //is this any clearer?
+        //"${this.url}${pathinfo ?: ''}${queryString ? '?'+queryString : ''}"
+
         def url = this.url
         if (pathinfo) {
             url += pathinfo
